@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  sessionId    String?  @unique
+  votes        Vote[]
+  createdAt    DateTime @default(now())
+}
+
+model Event {
+  id            String   @id @default(uuid())
+  title         String
+  date          DateTime
+  time          String?
+  venue         String?
+  sourceLink    String?  @unique
+  image         String?
+  isHosted      Boolean  @default(false)
+  genre         String?
+  accessibility String?
+  isIndiegoPick Boolean  @default(false)
+  rsvps         Rsvp[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model VoteOption {
+  id    String @id @default(uuid())
+  title String
+  venue String
+  image String?
+  votes Vote[]
+}
+
+model Vote {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  voteOptionId String
+  voteOption   VoteOption @relation(fields: [voteOptionId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId])
+}
+
+model Rsvp {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  name      String
+  email     String
+  createdAt DateTime @default(now())
+
+  @@unique([email, eventId])
+}
