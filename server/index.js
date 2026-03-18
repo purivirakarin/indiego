@@ -157,6 +157,102 @@ app.get('/api/events/hosted', async (req, res) => {
   }
 })
 
+// --- RSVP ---
+
+app.post('/api/rsvp', async (req, res) => {
+  try {
+    const { eventId, name, email } = req.body
+    if (!eventId || !name || !email)
+      return res
+        .status(400)
+        .json({ error: 'Event ID, name, and email are required' })
+
+    const event = await prisma.event.findUnique({ where: { id: eventId } })
+    if (!event || !event.isHosted)
+      return res.status(404).json({ error: 'Hosted event not found' })
+
+    const existing = await prisma.rsvp.findUnique({
+      where: { email_eventId: { email, eventId } },
+    })
+    if (existing)
+      return res
+        .status(400)
+        .json({ error: 'You have already RSVPd for this event' })
+
+    await prisma.rsvp.create({ data: { eventId, name, email } })
+    res.json({ success: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to submit RSVP' })
+  }
+})
+
+// --- VOTES ---
+
+app.get('/api/votes', async (req, res) => {
+  try {
+    const { sessionId } = req.query
+    let userVoted = false
+
+    if (sessionId) {
+      const user = await prisma.user.findUnique({ where: { sessionId } })
+      if (user) {
+        const vote = await prisma.vote.findFirst({ where: { userId: user.id } })
+        if (vote) userVoted = true
+      }
+    }
+
+    const options = await prisma.voteOption.findMany({
+      include: { _count: { select: { votes: true } } },
+    })
+
+    res.json({
+      userVoted,
+      options: options.map((opt) => ({
+        id: opt.id,
+        title: opt.title,
+        venue: opt.venue,
+        image: opt.image,
+        votes: userVoted ? opt._count.votes : null,
+      })),
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to fetch votes' })
+  }
+})
+
+app.post('/api/votes', async (req, res) => {
+  try {
+    const { sessionId, voteOptionId } = req.body
+    if (!sessionId || !voteOptionId)
+      return res
+        .status(400)
+        .json({ error: 'Missing sessionId or voteOptionId' })
+
+    let user = await prisma.user.findUnique({ where: { sessionId } })
+    if (!user) {
+      const hash = await bcrypt.hash(crypto.randomUUID(), 10)
+      user = await prisma.user.create({
+        data: {
+          sessionId,
+          email: `anon-${sessionId}@indiego.local`,
+          passwordHash: hash,
+        },
+      })
+    }
+
+    const existing = await prisma.vote.findFirst({ where: { userId: user.id } })
+    if (existing) return res.status(400).json({ error: 'Already voted' })
+
+    await prisma.vote.create({ data: { userId: user.id, voteOptionId } })
+    res.json({ success: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to cast vote' })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
 })
