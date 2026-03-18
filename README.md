@@ -1,16 +1,34 @@
-# React + Vite
+# indiego
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple and modern React web application, bootstrapped with Vite and fully typed with TypeScript.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+To get started, clone the repository and install the necessary dependencies:
 
-## React Compiler
+```bash
+# Install dependencies
+npm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Start local development server
+npm run dev
+```
 
-## Expanding the ESLint configuration
+The application will be available at `http://localhost:5173`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Available Scripts
+
+In the project directory, you can run:
+
+- **`npm run dev`**: Starts the development server with HMR.
+- **`npm run build`**: Type-checks (`tsc`) and bundles the app for production (`vite build`).
+- **`npm run lint`**: Lints the source files for potential errors.
+- **`npm run format`**: Automatically formats the source code.
+- **`npm run preview`**: Boots up a local static web server that serves the files from `dist` to preview the production build.
+
+## Contribution Guidelines
+
+This project enforces strict code style standards, ensuring all contributors write clean and unified code. We use **ESLint** and **Prettier**, governed automatically by pre-commit hooks (`husky` + `lint-staged`).
+
+Before committing your changes, your code will be automatically linted and formatted.
+If you simply want to format your code before creating a pull request, run `npm run format`.
