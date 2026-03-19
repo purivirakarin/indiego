@@ -1,3 +1,4 @@
+import cron from 'node-cron'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { PrismaClient } from '@prisma/client'
@@ -381,3 +382,71 @@ async function seedScreenings() {
   await upsertEvents(screenings)
   console.log(`Seeded ${screenings.length} screening events.`)
 }
+
+async function seedHostedAndPolls() {
+  const hostedCount = await prisma.event.count({ where: { isHosted: true } })
+  if (hostedCount === 0) {
+    await prisma.event.createMany({
+      data: [
+        {
+          title: 'Soundscapes',
+          date: daysFromNow(14),
+          time: '7:30PM',
+          venue: 'Online',
+          image:
+            'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&fit=crop',
+          isHosted: true,
+          genre: 'Musical Discovery',
+        },
+        {
+          title: 'Sip & Zine',
+          date: daysFromNow(16),
+          time: '5:00PM',
+          venue: "Pearl's Hill Terrace",
+          image:
+            'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=800&fit=crop',
+          isHosted: true,
+          genre: 'Community',
+        },
+      ],
+    })
+    console.log('Seeded hosted events.')
+  }
+
+  const voteOptionCount = await prisma.voteOption.count()
+  if (voteOptionCount === 0) {
+    await prisma.voteOption.createMany({
+      data: [
+        { title: 'Reel Nostalgia', venue: 'Heritage Cafe' },
+        { title: 'Under the Neon Sky', venue: 'Rooftop Venue' },
+      ],
+    })
+    console.log('Seeded vote options.')
+  }
+}
+
+export async function runScrapers() {
+  console.log('Starting fetch jobs...')
+  const results = await Promise.allSettled([
+    scrapeObjectifs(),
+    scrapeSFS(),
+    scrapeThirdParties(),
+  ])
+  const totalScraped = results.reduce(
+    (sum, r) => sum + (r.status === 'fulfilled' ? r.value : 0),
+    0,
+  )
+
+  if (totalScraped === 0) {
+    await seedScreenings()
+  }
+
+  await seedHostedAndPolls()
+  console.log('Fetch jobs completed.')
+}
+
+cron.schedule('0 0 * * *', () => {
+  runScrapers()
+})
+
+runScrapers()
