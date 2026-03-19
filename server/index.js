@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
+import { runScrapers } from './scraper.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
@@ -250,6 +251,18 @@ app.post('/api/votes', async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Failed to cast vote' })
+  }
+})
+
+// --- ADMIN ---
+
+app.post('/api/admin/scrape', async (req, res) => {
+  try {
+    await runScrapers()
+    res.json({ success: true, message: 'Scraping triggered' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Scraping failed' })
   }
 })
 
