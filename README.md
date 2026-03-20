@@ -1,34 +1,35 @@
-# indiego
+# The Indiego
 
-A simple and modern React web application, bootstrapped with Vite and fully typed with TypeScript.
+A fully functional web platform for exploring Singapore's indie film and arts community. Built with React (Vite) and an Express.js backend powered by Prisma connecting to a database for dynamic event storage.
 
-## Quick Start
+## Local Development Setup
 
-To get started, clone the repository and install the necessary dependencies:
+To run the application locally with a SQLite database:
 
-```bash
-# Install dependencies
-npm install
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Initialize the local SQLite database:
+   ```bash
+   npx prisma db push
+   npx prisma generate
+   ```
+3. Start the development servers (runs both Vite frontend and Express backend concurrently):
+   ```bash
+   npm run dev
+   ```
+   The web application will be available at `http://localhost:5173`.
 
-# Start local development server
-npm run dev
-```
+## Deployment Setup
 
-The application will be available at `http://localhost:5173`.
+When deploying to a production environment (such as Vercel, Heroku, or Render), it is highly recommended to use a robust database like **PostgreSQL** instead of SQLite.
 
-## Available Scripts
-
-In the project directory, you can run:
-
-- **`npm run dev`**: Starts the development server with HMR.
-- **`npm run build`**: Type-checks (`tsc`) and bundles the app for production (`vite build`).
-- **`npm run lint`**: Lints the source files for potential errors.
-- **`npm run format`**: Automatically formats the source code.
-- **`npm run preview`**: Boots up a local static web server that serves the files from `dist` to preview the production build.
-
-## Contribution Guidelines
-
-This project enforces strict code style standards, ensuring all contributors write clean and unified code. We use **ESLint** and **Prettier**, governed automatically by pre-commit hooks (`husky` + `lint-staged`).
-
-Before committing your changes, your code will be automatically linted and formatted.
-If you simply want to format your code before creating a pull request, run `npm run format`.
+1. **Schema Update**: In your `prisma/schema.prisma` file, alter the datasource block `provider` from `"sqlite"` to `"postgresql"`.
+2. **Environment Variables**: Configure the `DATABASE_URL` environment variable in your hosting platform to point to your deployed PostgreSQL instance.
+3. **Build & Migrate**: During deployment, ensure the platform runs:
+   ```bash
+   npx prisma generate
+   npm run build
+   ```
+4. **Hosting**: You can deploy the frontend static files in `dist` to a CDN, and host the Express server (`server/index.js`) on a Node.js environment, ensuring CORS is configured to match your frontend domain.
