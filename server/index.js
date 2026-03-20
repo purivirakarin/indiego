@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
-import { runScrapers } from './scraper.js'
+import { runSeed } from './seed.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
@@ -254,17 +254,8 @@ app.post('/api/votes', async (req, res) => {
   }
 })
 
-// --- ADMIN ---
-
-app.post('/api/admin/scrape', async (req, res) => {
-  try {
-    await runScrapers()
-    res.json({ success: true, message: 'Scraping triggered' })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Scraping failed' })
-  }
-})
+// TODO: scraper removed — using seed data for now (tech debt)
+runSeed().catch(console.error)
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
