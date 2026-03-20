@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 import { runSeed } from './seed.js'
 import jwt from 'jsonwebtoken'
@@ -11,7 +12,7 @@ const PORT = process.env.PORT || 3001
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret'
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '5mb' }))
 
 function authenticateToken(req, res, next) {
   const header = req.headers['authorization']
@@ -25,11 +26,46 @@ function authenticateToken(req, res, next) {
   }
 }
 
+function optionalAuth(req, res, next) {
+  const header = req.headers['authorization']
+  const token = header && header.split(' ')[1]
+  if (token) {
+    try {
+      req.user = jwt.verify(token, JWT_SECRET)
+    } catch {
+      // ignore invalid token
+    }
+  }
+  next()
+}
+
+async function awardXP(userId, amount) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { xp: { increment: amount } },
+  })
+  const newRank =
+    user.xp >= 500
+      ? 'Visionary'
+      : user.xp >= 150
+        ? 'Curator'
+        : user.xp >= 50
+          ? 'Storyteller'
+          : 'Observer'
+  if (newRank !== user.rank) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { rank: newRank },
+    })
+  }
+  return { xp: user.xp, rank: newRank }
+}
+
 // --- AUTH ---
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { email, password, displayName } = req.body
     if (!email || !password)
       return res.status(400).json({ error: 'Email and password required' })
     if (password.length < 6)
@@ -43,13 +79,25 @@ app.post('/api/auth/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: { email, passwordHash, sessionId: email },
+      data: {
+        email,
+        passwordHash,
+        sessionId: email,
+        displayName: displayName || null,
+      },
     })
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: '7d',
     })
-    res.json({ token, email: user.email })
+    res.json({
+      token,
+      email: user.email,
+      displayName: user.displayName,
+      profileImage: user.profileImage,
+      xp: user.xp,
+      rank: user.rank,
+    })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Server error' })
@@ -73,7 +121,14 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: '7d',
     })
-    res.json({ token, email: user.email })
+    res.json({
+      token,
+      email: user.email,
+      displayName: user.displayName,
+      profileImage: user.profileImage,
+      xp: user.xp,
+      rank: user.rank,
+    })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Server error' })
@@ -84,10 +139,114 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      select: { id: true, email: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        profileImage: true,
+        xp: true,
+        rank: true,
+        createdAt: true,
+      },
     })
     if (!user) return res.status(404).json({ error: 'User not found' })
     res.json(user)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+app.put('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    const { displayName, profileImage } = req.body
+    const data = {}
+    if (displayName !== undefined) data.displayName = displayName
+    if (profileImage !== undefined) data.profileImage = profileImage
+
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        profileImage: true,
+        xp: true,
+        rank: true,
+        createdAt: true,
+      },
+    })
+    res.json(user)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// --- FORGOT / RESET PASSWORD ---
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) return res.status(400).json({ error: 'Email is required' })
+
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'If that email is registered, a reset link has been sent.',
+      })
+    }
+
+    const resetToken = crypto.randomUUID()
+    const resetTokenExp = new Date(Date.now() + 60 * 60 * 1000)
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetToken, resetTokenExp },
+    })
+
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`
+    console.log(`\n  Password reset link: ${resetUrl}\n`)
+
+    res.json({
+      success: true,
+      message: 'If that email is registered, a reset link has been sent.',
+      resetToken,
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body
+    if (!token || !newPassword)
+      return res.status(400).json({ error: 'Token and new password required' })
+    if (newPassword.length < 6)
+      return res
+        .status(400)
+        .json({ error: 'Password must be at least 6 characters' })
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExp: { gt: new Date() },
+      },
+    })
+    if (!user)
+      return res.status(400).json({ error: 'Invalid or expired reset token' })
+
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, resetToken: null, resetTokenExp: null },
+    })
+
+    res.json({ success: true })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Server error' })
@@ -155,6 +314,20 @@ app.get('/api/events/hosted', async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Failed to fetch hosted events' })
+  }
+})
+
+app.get('/api/events/:id', async (req, res) => {
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: req.params.id },
+      include: { rsvps: { select: { id: true } } },
+    })
+    if (!event) return res.status(404).json({ error: 'Event not found' })
+    res.json({ ...event, rsvpCount: event.rsvps.length, rsvps: undefined })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to fetch event' })
   }
 })
 
