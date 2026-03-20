@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
@@ -8,36 +8,34 @@ import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
 import MuiLink from '@mui/material/Link'
 
-export default function Login() {
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
-  const [error, setError] = useState('')
+export default function ForgotPassword() {
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [resetLink, setResetLink] = useState('')
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setMessage('')
+    setResetLink('')
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email }),
       })
       const data = await res.json()
-
       if (res.ok) {
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('email', data.email)
-        localStorage.setItem('sessionId', data.email)
-        if (data.profileImage)
-          localStorage.setItem('profileImage', data.profileImage)
-        if (data.displayName)
-          localStorage.setItem('displayName', data.displayName)
-        navigate('/')
+        setMessage(data.message)
+        if (data.resetToken) {
+          setResetLink(`/reset-password/${data.resetToken}`)
+        }
       } else {
-        setError(data.error || 'Login failed.')
+        setError(data.error || 'Something went wrong.')
       }
     } catch {
       setError('Unable to connect to server.')
@@ -76,7 +74,7 @@ export default function Login() {
             mb: 1,
           }}
         >
-          Welcome Back
+          Forgot Password
         </Typography>
         <Typography
           sx={{
@@ -86,9 +84,27 @@ export default function Login() {
             fontSize: 14,
           }}
         >
-          Log in to access your votes, RSVPs, and curated picks.
+          Enter your email address and we&apos;ll send you a link to reset your
+          password.
         </Typography>
 
+        {message && (
+          <Alert severity='success' sx={{ mb: 2 }}>
+            {message}
+          </Alert>
+        )}
+        {resetLink && (
+          <Alert severity='info' sx={{ mb: 2 }}>
+            Dev mode:{' '}
+            <MuiLink
+              component={Link}
+              to={resetLink}
+              sx={{ color: 'primary.main', fontWeight: 600 }}
+            >
+              Click here to reset password
+            </MuiLink>
+          </Alert>
+        )}
         {error && (
           <Alert severity='error' sx={{ mb: 2 }}>
             {error}
@@ -105,16 +121,8 @@ export default function Login() {
             type='email'
             required
             fullWidth
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <TextField
-            label='Password'
-            type='password'
-            required
-            fullWidth
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <Button
             type='submit'
@@ -123,35 +131,25 @@ export default function Login() {
             disabled={loading}
             sx={{ mt: 1, py: 1.5, fontSize: 16 }}
           >
-            {loading ? 'Logging In...' : 'Log In'}
+            {loading ? 'Sending...' : 'Send Reset Link'}
           </Button>
-        </Box>
-
-        <Box sx={{ textAlign: 'right', mt: 1 }}>
-          <MuiLink
-            component={Link}
-            to='/forgot-password'
-            sx={{ color: 'text.secondary', fontSize: 13 }}
-          >
-            Forgot Password?
-          </MuiLink>
         </Box>
 
         <Typography
           sx={{
             textAlign: 'center',
-            mt: 2,
+            mt: 3,
             fontSize: 14,
             color: 'text.primary',
           }}
         >
-          Don&apos;t have an account?{' '}
+          Remember your password?{' '}
           <MuiLink
             component={Link}
-            to='/signup'
+            to='/login'
             sx={{ color: 'primary.main', fontWeight: 600 }}
           >
-            Sign Up
+            Log In
           </MuiLink>
         </Typography>
       </Paper>
