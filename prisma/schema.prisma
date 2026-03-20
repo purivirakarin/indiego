@@ -8,12 +8,20 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  sessionId    String?  @unique
-  votes        Vote[]
-  createdAt    DateTime @default(now())
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  sessionId     String?   @unique
+  displayName   String?
+  profileImage  String?
+  xp            Int       @default(0)
+  rank          String    @default("Observer")
+  resetToken    String?   @unique
+  resetTokenExp DateTime?
+  votes         Vote[]
+  posts         Post[]
+  comments      Comment[]
+  createdAt     DateTime  @default(now())
 }
 
 model Event {
@@ -24,6 +32,8 @@ model Event {
   venue         String?
   sourceLink    String?  @unique
   image         String?
+  description   String?
+  galleryImages String?
   isHosted      Boolean  @default(false)
   genre         String?
   accessibility String?
@@ -61,4 +71,34 @@ model Rsvp {
   createdAt DateTime @default(now())
 
   @@unique([email, eventId])
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  title     String
+  body      String
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  body      String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String
+  proposal  String
+  createdAt DateTime @default(now())
 }
