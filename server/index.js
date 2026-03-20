@@ -427,6 +427,205 @@ app.post('/api/votes', async (req, res) => {
   }
 })
 
+// --- COMMUNITY POSTS ---
+
+app.get('/api/posts', async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query
+    const pageNum = parseInt(page)
+    const limitNum = parseInt(limit)
+    const skip = (pageNum - 1) * limitNum
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: {
+          author: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+              profileImage: true,
+              rank: true,
+            },
+          },
+          _count: { select: { comments: true } },
+        },
+      }),
+      prisma.post.count(),
+    ])
+
+    res.json({
+      posts: posts.map((p) => ({
+        ...p,
+        commentCount: p._count.comments,
+        _count: undefined,
+      })),
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to fetch posts' })
+  }
+})
+
+app.get('/api/posts/:id', async (req, res) => {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id: req.params.id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            profileImage: true,
+            rank: true,
+          },
+        },
+        comments: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+                profileImage: true,
+                rank: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    if (!post) return res.status(404).json({ error: 'Post not found' })
+    res.json(post)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to fetch post' })
+  }
+})
+
+app.post('/api/posts', authenticateToken, async (req, res) => {
+  try {
+    const { title, body } = req.body
+    if (!title || !body)
+      return res.status(400).json({ error: 'Title and body are required' })
+
+    const post = await prisma.post.create({
+      data: { title, body, authorId: req.user.userId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            profileImage: true,
+            rank: true,
+          },
+        },
+      },
+    })
+
+    await awardXP(req.user.userId, 10)
+    res.json(post)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to create post' })
+  }
+})
+
+app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id: req.params.id },
+    })
+    if (!post) return res.status(404).json({ error: 'Post not found' })
+    if (post.authorId !== req.user.userId)
+      return res.status(403).json({ error: 'Not authorized' })
+
+    await prisma.post.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to delete post' })
+  }
+})
+
+app.post('/api/posts/:id/comments', authenticateToken, async (req, res) => {
+  try {
+    const { body } = req.body
+    if (!body)
+      return res.status(400).json({ error: 'Comment body is required' })
+
+    const post = await prisma.post.findUnique({
+      where: { id: req.params.id },
+    })
+    if (!post) return res.status(404).json({ error: 'Post not found' })
+
+    const comment = await prisma.comment.create({
+      data: { body, authorId: req.user.userId, postId: req.params.id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            profileImage: true,
+            rank: true,
+          },
+        },
+      },
+    })
+
+    await awardXP(req.user.userId, 5)
+    res.json(comment)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to create comment' })
+  }
+})
+
+app.delete('/api/comments/:id', authenticateToken, async (req, res) => {
+  try {
+    const comment = await prisma.comment.findUnique({
+      where: { id: req.params.id },
+    })
+    if (!comment) return res.status(404).json({ error: 'Comment not found' })
+    if (comment.authorId !== req.user.userId)
+      return res.status(403).json({ error: 'Not authorized' })
+
+    await prisma.comment.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to delete comment' })
+  }
+})
+
+// --- CONTACT ---
+
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, subject, proposal } = req.body
+    if (!name || !email || !subject || !proposal)
+      return res.status(400).json({ error: 'All fields are required' })
+
+    await prisma.contactMessage.create({
+      data: { name, email, subject, proposal },
+    })
+    res.json({ success: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to send message' })
+  }
+})
+
 // TODO: scraper removed — using seed data for now (tech debt)
 runSeed().catch(console.error)
 
