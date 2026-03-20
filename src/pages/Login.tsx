@@ -31,6 +31,10 @@ export default function Login() {
         localStorage.setItem('token', data.token)
         localStorage.setItem('email', data.email)
         localStorage.setItem('sessionId', data.email)
+        if (data.profileImage)
+          localStorage.setItem('profileImage', data.profileImage)
+        if (data.displayName)
+          localStorage.setItem('displayName', data.displayName)
         navigate('/')
       } else {
         setError(data.error || 'Login failed.')
@@ -123,10 +127,20 @@ export default function Login() {
           </Button>
         </Box>
 
+        <Box sx={{ textAlign: 'right', mt: 1 }}>
+          <MuiLink
+            component={Link}
+            to='/forgot-password'
+            sx={{ color: 'text.secondary', fontSize: 13 }}
+          >
+            Forgot Password?
+          </MuiLink>
+        </Box>
+
         <Typography
           sx={{
             textAlign: 'center',
-            mt: 3,
+            mt: 2,
             fontSize: 14,
             color: 'text.primary',
           }}
