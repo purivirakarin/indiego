@@ -677,18 +677,24 @@ app.get('/api/search', async (req, res) => {
   }
 })
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`)
-  runSeed().catch(console.error)
-})
+// Export app for Vercel serverless
+export default app
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(
-      `Port ${PORT} is already in use. Kill the other process or use a different port.`,
-    )
-  } else {
-    console.error('Server error:', err)
-  }
-  process.exit(1)
-})
+// Only listen when running directly (local dev), not when imported by Vercel
+if (process.env.VERCEL !== '1') {
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`)
+    runSeed().catch(console.error)
+  })
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `Port ${PORT} is already in use. Kill the other process or use a different port.`,
+      )
+    } else {
+      console.error('Server error:', err)
+    }
+    process.exit(1)
+  })
+}
