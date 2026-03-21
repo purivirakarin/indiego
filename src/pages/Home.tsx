@@ -24,30 +24,36 @@ export default function Home() {
   >([])
   const [userVoted, setUserVoted] = useState(false)
 
+  const token = localStorage.getItem('token')
+  const isLoggedIn = !!token
+
   useEffect(() => {
     axios
       .get('/api/events?limit=6')
       .then((res) => setEvents(res.data.events))
       .catch(console.error)
 
-    const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID()
-    localStorage.setItem('sessionId', sessionId)
-
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
     axios
-      .get(`/api/votes?sessionId=${sessionId}`)
+      .get('/api/votes', { headers })
       .then((res) => {
         setUserVoted(res.data.userVoted)
         setPollOptions(res.data.options)
       })
       .catch(console.error)
-  }, [])
+  }, [token])
 
   const handleVote = async (voteOptionId: string) => {
-    if (userVoted) return
-    const sessionId = localStorage.getItem('sessionId')
+    if (userVoted || !isLoggedIn) return
     try {
-      await axios.post('/api/votes', { sessionId, voteOptionId })
-      const res = await axios.get(`/api/votes?sessionId=${sessionId}`)
+      await axios.post(
+        '/api/votes',
+        { voteOptionId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      const res = await axios.get('/api/votes', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setUserVoted(res.data.userVoted)
       setPollOptions(res.data.options)
     } catch (err) {
@@ -198,10 +204,20 @@ export default function Home() {
               <br />
               Join us in curating the next chapter.
             </Typography>
-            {!userVoted && (
+            {!userVoted && isLoggedIn && (
               <Typography sx={{ mt: 1.5, fontWeight: 'bold', fontSize: 15 }}>
                 Vote to see the results!
               </Typography>
+            )}
+            {!isLoggedIn && (
+              <Button
+                component={Link}
+                to='/login'
+                variant='contained'
+                sx={{ mt: 2, textTransform: 'none' }}
+              >
+                Log in to vote
+              </Button>
             )}
           </Box>
 
@@ -221,10 +237,11 @@ export default function Home() {
                   position: 'relative',
                   background:
                     'linear-gradient(180deg, #b53a2a 0%, #d4887b 100%)',
-                  cursor: userVoted ? 'default' : 'pointer',
+                  cursor: userVoted || !isLoggedIn ? 'default' : 'pointer',
                   transition: 'transform 0.2s',
                   '&:hover': {
-                    transform: userVoted ? 'none' : 'translateY(-4px)',
+                    transform:
+                      userVoted || !isLoggedIn ? 'none' : 'translateY(-4px)',
                   },
                 }}
               >
