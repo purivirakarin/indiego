@@ -264,6 +264,7 @@ app.get('/api/events', async (req, res) => {
       genre,
       accessibility,
       isIndiegoPick,
+      sort = 'date_asc',
     } = req.query
     const pageNum = parseInt(page)
     const limitNum = parseInt(limit)
@@ -275,10 +276,15 @@ app.get('/api/events', async (req, res) => {
     if (accessibility) where.accessibility = { contains: accessibility }
     if (isIndiegoPick === 'true') where.isIndiegoPick = true
 
+    let orderBy = { date: 'asc' }
+    if (sort === 'date_desc') orderBy = { date: 'desc' }
+    else if (sort === 'title_asc') orderBy = { title: 'asc' }
+    else if (sort === 'title_desc') orderBy = { title: 'desc' }
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
-        orderBy: { date: 'asc' },
+        orderBy,
         skip,
         take: limitNum,
       }),
@@ -299,9 +305,16 @@ app.get('/api/events', async (req, res) => {
 
 app.get('/api/events/hosted', async (req, res) => {
   try {
+    const { search = '', genre, sort = 'date_asc' } = req.query
+    const where = { isHosted: true }
+    if (search) where.title = { contains: search }
+    if (genre) where.genre = genre
+
+    const orderBy = sort === 'date_desc' ? { date: 'desc' } : { date: 'asc' }
+
     const events = await prisma.event.findMany({
-      where: { isHosted: true },
-      orderBy: { date: 'asc' },
+      where,
+      orderBy,
       include: { rsvps: { select: { id: true } } },
     })
     res.json(
