@@ -264,6 +264,7 @@ app.get('/api/events', async (req, res) => {
       genre,
       accessibility,
       isIndiegoPick,
+      sort = 'date_asc',
     } = req.query
     const pageNum = parseInt(page)
     const limitNum = parseInt(limit)
@@ -275,10 +276,15 @@ app.get('/api/events', async (req, res) => {
     if (accessibility) where.accessibility = { contains: accessibility }
     if (isIndiegoPick === 'true') where.isIndiegoPick = true
 
+    let orderBy = { date: 'asc' }
+    if (sort === 'date_desc') orderBy = { date: 'desc' }
+    else if (sort === 'title_asc') orderBy = { title: 'asc' }
+    else if (sort === 'title_desc') orderBy = { title: 'desc' }
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
-        orderBy: { date: 'asc' },
+        orderBy,
         skip,
         take: limitNum,
       }),
@@ -299,9 +305,16 @@ app.get('/api/events', async (req, res) => {
 
 app.get('/api/events/hosted', async (req, res) => {
   try {
+    const { search = '', genre, sort = 'date_asc' } = req.query
+    const where = { isHosted: true }
+    if (search) where.title = { contains: search }
+    if (genre) where.genre = genre
+
+    const orderBy = sort === 'date_desc' ? { date: 'desc' } : { date: 'asc' }
+
     const events = await prisma.event.findMany({
-      where: { isHosted: true },
-      orderBy: { date: 'asc' },
+      where,
+      orderBy,
       include: { rsvps: { select: { id: true } } },
     })
     res.json(
@@ -363,17 +376,15 @@ app.post('/api/rsvp', async (req, res) => {
 
 // --- VOTES ---
 
-app.get('/api/votes', async (req, res) => {
+app.get('/api/votes', optionalAuth, async (req, res) => {
   try {
-    const { sessionId } = req.query
     let userVoted = false
 
-    if (sessionId) {
-      const user = await prisma.user.findUnique({ where: { sessionId } })
-      if (user) {
-        const vote = await prisma.vote.findFirst({ where: { userId: user.id } })
-        if (vote) userVoted = true
-      }
+    if (req.user) {
+      const vote = await prisma.vote.findFirst({
+        where: { userId: req.user.userId },
+      })
+      if (vote) userVoted = true
     }
 
     const options = await prisma.voteOption.findMany({
@@ -396,30 +407,23 @@ app.get('/api/votes', async (req, res) => {
   }
 })
 
-app.post('/api/votes', async (req, res) => {
+app.post('/api/votes', authenticateToken, async (req, res) => {
   try {
-    const { sessionId, voteOptionId } = req.body
-    if (!sessionId || !voteOptionId)
-      return res
-        .status(400)
-        .json({ error: 'Missing sessionId or voteOptionId' })
+    const { voteOptionId } = req.body
+    if (!voteOptionId)
+      return res.status(400).json({ error: 'Missing voteOptionId' })
 
-    let user = await prisma.user.findUnique({ where: { sessionId } })
-    if (!user) {
-      const hash = await bcrypt.hash(crypto.randomUUID(), 10)
-      user = await prisma.user.create({
-        data: {
-          sessionId,
-          email: `anon-${sessionId}@indiego.local`,
-          passwordHash: hash,
-        },
-      })
-    }
-
-    const existing = await prisma.vote.findFirst({ where: { userId: user.id } })
+    const existing = await prisma.vote.findFirst({
+      where: { userId: req.user.userId },
+    })
     if (existing) return res.status(400).json({ error: 'Already voted' })
 
-    await prisma.vote.create({ data: { userId: user.id, voteOptionId } })
+    await prisma.vote.create({
+      data: { userId: req.user.userId, voteOptionId },
+    })
+
+    await awardXP(req.user.userId, 3)
+
     res.json({ success: true })
   } catch (error) {
     console.error(error)
@@ -626,9 +630,65 @@ app.post('/api/contact', async (req, res) => {
   }
 })
 
-// TODO: scraper removed — using seed data for now (tech debt)
-runSeed().catch(console.error)
+// --- SEARCH ---
 
-app.listen(PORT, () => {
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q = '' } = req.query
+    if (!q.trim()) return res.json({ events: [], posts: [] })
+
+    const [events, posts] = await Promise.all([
+      prisma.event.findMany({
+        where: { title: { contains: q } },
+        orderBy: { date: 'asc' },
+        take: 10,
+      }),
+      prisma.post.findMany({
+        where: {
+          OR: [{ title: { contains: q } }, { body: { contains: q } }],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: {
+          author: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+              rank: true,
+            },
+          },
+          _count: { select: { comments: true } },
+        },
+      }),
+    ])
+
+    res.json({
+      events,
+      posts: posts.map((p) => ({
+        ...p,
+        commentCount: p._count.comments,
+        _count: undefined,
+      })),
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Search failed' })
+  }
+})
+
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
+  runSeed().catch(console.error)
+})
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `Port ${PORT} is already in use. Kill the other process or use a different port.`,
+    )
+  } else {
+    console.error('Server error:', err)
+  }
+  process.exit(1)
 })

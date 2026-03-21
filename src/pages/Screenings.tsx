@@ -40,6 +40,7 @@ export default function Screenings() {
   const [genre, setGenre] = useState('')
   const [accessibility, setAccessibility] = useState('')
   const [isIndiegoPick, setIsIndiegoPick] = useState(false)
+  const [sort, setSort] = useState('date_asc')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const limit = 12
@@ -54,6 +55,7 @@ export default function Screenings() {
         ...(genre && { genre }),
         ...(accessibility && { accessibility }),
         ...(isIndiegoPick && { isIndiegoPick: 'true' }),
+        ...(sort && { sort }),
       })
       const { data } = await axios.get(`/api/events?${params.toString()}`)
       setEvents(data.events)
@@ -63,7 +65,7 @@ export default function Screenings() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, genre, accessibility, isIndiegoPick])
+  }, [page, search, genre, accessibility, isIndiegoPick, sort])
 
   useEffect(() => {
     fetchEvents()
@@ -180,6 +182,26 @@ export default function Screenings() {
                   {a}
                 </MenuItem>
               ))}
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size='small'
+            sx={{ minWidth: 160, bgcolor: '#fff', borderRadius: 1 }}
+          >
+            <InputLabel>Sort By</InputLabel>
+            <Select
+              value={sort}
+              label='Sort By'
+              onChange={(e) => {
+                setSort(e.target.value)
+                setPage(1)
+              }}
+            >
+              <MenuItem value='date_asc'>Date (Earliest)</MenuItem>
+              <MenuItem value='date_desc'>Date (Latest)</MenuItem>
+              <MenuItem value='title_asc'>Title (A-Z)</MenuItem>
+              <MenuItem value='title_desc'>Title (Z-A)</MenuItem>
             </Select>
           </FormControl>
 
