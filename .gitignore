@@ -19,6 +19,9 @@ dist-ssr
 prisma/dev.db
 prisma/dev.db-journal
 
+# Supabase
+supabase/.temp
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
