@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid'
+import TextField from '@mui/material/TextField'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import InputAdornment from '@mui/material/InputAdornment'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
-import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+import SearchIcon from '@mui/icons-material/Search'
 import axios from 'axios'
 import EventCard, { EventData } from '../components/EventCard'
 
@@ -21,6 +27,9 @@ interface HostedEvent extends EventData {
 export default function Events() {
   const [events, setEvents] = useState<HostedEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [genre, setGenre] = useState('')
+  const [sort, setSort] = useState('date_asc')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<HostedEvent | null>(null)
   const [rsvpForm, setRsvpForm] = useState({ name: '', email: '' })
@@ -28,13 +37,33 @@ export default function Events() {
   const [rsvpError, setRsvpError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const fetchEvents = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        ...(search && { search }),
+        ...(genre && { genre }),
+        ...(sort && { sort }),
+      })
+      const { data } = await axios.get(
+        `/api/events/hosted?${params.toString()}`,
+      )
+      setEvents(data)
+    } catch {
+      console.error('Failed to fetch events')
+    } finally {
+      setLoading(false)
+    }
+  }, [search, genre, sort])
+
   useEffect(() => {
-    axios
-      .get('/api/events/hosted')
-      .then((res) => setEvents(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+    fetchEvents()
+  }, [fetchEvents])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    fetchEvents()
+  }
 
   const openRsvp = (event: HostedEvent) => {
     setSelectedEvent(event)
@@ -80,6 +109,8 @@ export default function Events() {
     }
   }
 
+  const genres = ['Musical Discovery', 'Community']
+
   return (
     <Box sx={{ bgcolor: 'secondary.main', minHeight: '80vh' }}>
       <Container maxWidth='lg' sx={{ py: { xs: 4, md: 8 } }}>
@@ -106,6 +137,91 @@ export default function Events() {
           the community. From panel discussions to networking nights, experience
           culture up close.
         </Typography>
+
+        <Box
+          component='form'
+          onSubmit={handleSearchSubmit}
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 4,
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+          }}
+        >
+          <TextField
+            placeholder='Search events...'
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size='small'
+            sx={{
+              flex: 1,
+              minWidth: 220,
+              bgcolor: '#fff',
+              borderRadius: 1,
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <Button
+            type='submit'
+            variant='contained'
+            sx={{ minWidth: 100, py: 1 }}
+          >
+            Search
+          </Button>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 5,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <FormControl
+            size='small'
+            sx={{ minWidth: 180, bgcolor: '#fff', borderRadius: 1 }}
+          >
+            <InputLabel>Genre</InputLabel>
+            <Select
+              value={genre}
+              label='Genre'
+              onChange={(e) => setGenre(e.target.value)}
+            >
+              <MenuItem value=''>All Genres</MenuItem>
+              {genres.map((g) => (
+                <MenuItem key={g} value={g}>
+                  {g}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size='small'
+            sx={{ minWidth: 160, bgcolor: '#fff', borderRadius: 1 }}
+          >
+            <InputLabel>Sort By</InputLabel>
+            <Select
+              value={sort}
+              label='Sort By'
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <MenuItem value='date_asc'>Date (Earliest)</MenuItem>
+              <MenuItem value='date_desc'>Date (Latest)</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
