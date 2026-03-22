@@ -45,6 +45,64 @@ export default function Screenings() {
   const [totalPages, setTotalPages] = useState(1)
   const limit = 12
 
+  const sampleEvents: EventData[] = [
+    {
+      id: 's2',
+      title: 'Documentary Night: Rivers',
+      date: new Date(Date.now() + 3 * 86400000).toISOString(),
+      time: '18:30',
+      venue: 'Community Hall',
+      image:
+        'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=60&auto=format&fit=crop',
+      isIndiegoPick: false,
+      genre: 'Documentary',
+    },
+    {
+      id: 's3',
+      title: 'Local Shorts Block',
+      date: new Date(Date.now() + 5 * 86400000).toISOString(),
+      time: '20:00',
+      venue: 'Indiego Studio',
+      image:
+        'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?w=800&q=60&auto=format&fit=crop',
+      isIndiegoPick: true,
+      genre: 'Short Films',
+    },
+    {
+      id: 's4',
+      title: 'Art House Evening',
+      date: new Date(Date.now() + 7 * 86400000).toISOString(),
+      time: '19:45',
+      venue: 'Art House',
+      image:
+        'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=800&q=60&auto=format&fit=crop',
+      isIndiegoPick: false,
+      genre: 'Art House',
+    },
+    {
+      id: 's5',
+      title: 'Online: Filmmaker Q&A',
+      date: new Date(Date.now() + 2 * 86400000).toISOString(),
+      time: '17:00',
+      venue: 'Online',
+      image:
+        'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=800&q=60&auto=format&fit=crop',
+      isIndiegoPick: false,
+      genre: 'Photography & Film',
+    },
+    {
+      id: 's6',
+      title: 'Midnight Local Feature',
+      date: new Date(Date.now() + 10 * 86400000).toISOString(),
+      time: '23:30',
+      venue: 'Riverside Cinema',
+      image:
+        'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&q=60&auto=format&fit=crop',
+      isIndiegoPick: false,
+      genre: 'Local Feature',
+    },
+  ]
+
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     try {
@@ -232,11 +290,24 @@ export default function Screenings() {
             <CircularProgress sx={{ color: 'primary.main' }} />
           </Box>
         ) : events.length === 0 ? (
-          <Typography
-            sx={{ textAlign: 'center', py: 8, color: 'text.primary' }}
-          >
-            No screenings found matching your criteria.
-          </Typography>
+          <>
+            <Typography
+              variant='h5'
+              sx={{ mb: 3, color: 'text.primary', fontWeight: 700 }}
+            >
+              Sample Screenings
+            </Typography>
+            <Grid container spacing={4}>
+              {sampleEvents.map((evt, idx) => (
+                <Grid key={evt.id || idx} size={{ xs: 6, sm: 4, md: 3 }}>
+                  <EventCard
+                    event={{ ...evt, online: evt.venue === 'Online' }}
+                    darkBg={false}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </>
         ) : (
           <Grid container spacing={4}>
             {events.map((evt, idx) => (
