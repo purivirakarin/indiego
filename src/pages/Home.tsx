@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
@@ -11,6 +11,7 @@ import axios from 'axios'
 import EventCard, { EventData } from '../components/EventCard'
 
 export default function Home() {
+  const navigate = useNavigate()
   const carouselRef = useRef<HTMLDivElement>(null)
   const [events, setEvents] = useState<EventData[]>([])
   const [pollOptions, setPollOptions] = useState<
@@ -235,7 +236,13 @@ export default function Home() {
               {pollOptions.map((opt, i) => (
                 <Box
                   key={opt.id}
-                  onClick={() => handleVote(opt.id)}
+                  onClick={() => {
+                    if (userVoted || !isLoggedIn) {
+                      navigate(i === 0 ? '/screenings' : '/events')
+                    } else {
+                      handleVote(opt.id)
+                    }
+                  }}
                   sx={{
                     width: { xs: 140, md: 180 },
                     height: {
@@ -247,11 +254,10 @@ export default function Home() {
                     position: 'relative',
                     background:
                       'linear-gradient(180deg, #b53a2a 0%, #d4887b 100%)',
-                    cursor: userVoted || !isLoggedIn ? 'default' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'transform 0.2s',
                     '&:hover': {
-                      transform:
-                        userVoted || !isLoggedIn ? 'none' : 'translateY(-4px)',
+                      transform: 'translateY(-4px)',
                     },
                   }}
                 >
@@ -355,7 +361,12 @@ export default function Home() {
           >
             {events.length > 0 ? (
               events.map((event, idx) => (
-                <EventCard key={event.id || idx} event={event} />
+                <EventCard
+                  key={event.id || idx}
+                  event={event}
+                  showDescription={true}
+                  carouselMode={true}
+                />
               ))
             ) : (
               <Typography sx={{ color: '#fff', py: 4 }}>

@@ -18,6 +18,7 @@ export interface EventData {
   sourceLink?: string
   isIndiegoPick?: boolean
   genre?: string
+  description?: string
 }
 
 const fallbackImage =
@@ -26,9 +27,16 @@ const fallbackImage =
 interface Props {
   event: EventData
   darkBg?: boolean
+  showDescription?: boolean
+  carouselMode?: boolean
 }
 
-export default function EventCard({ event, darkBg = true }: Props) {
+export default function EventCard({
+  event,
+  darkBg = true,
+  showDescription = false,
+  carouselMode = false,
+}: Props) {
   const navigate = useNavigate()
   const dateObj = new Date(event.date)
   const displayDate = isNaN(dateObj.getTime())
@@ -56,7 +64,9 @@ export default function EventCard({ event, darkBg = true }: Props) {
       sx={{
         bgcolor: 'transparent',
         boxShadow: 'none',
-        flex: { xs: '0 0 180px', sm: '0 0 220px' },
+        ...(carouselMode
+          ? { flex: { xs: '0 0 180px', sm: '0 0 220px' } }
+          : { width: '100%' }),
         cursor: event.sourceLink || event.id ? 'pointer' : 'default',
       }}
     >
@@ -129,6 +139,23 @@ export default function EventCard({ event, darkBg = true }: Props) {
           {event.time ? `, ${event.time}` : ''}
           {event.venue ? ` @ ${event.venue}` : ''}
         </Typography>
+        {showDescription && event.description && (
+          <Typography
+            variant='body2'
+            sx={{
+              mt: 1.5,
+              color: darkBg ? 'rgba(255,255,255,0.7)' : 'text.secondary',
+              fontSize: 13,
+              lineHeight: 1.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {event.description}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   )

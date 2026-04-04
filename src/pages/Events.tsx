@@ -240,6 +240,7 @@ export default function Events() {
                   <EventCard
                     event={{ ...evt, online: evt.venue === 'Online' }}
                     darkBg={false}
+                    showDescription={true}
                   />
                   <Box
                     sx={{
