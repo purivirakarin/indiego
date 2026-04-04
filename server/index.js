@@ -332,6 +332,83 @@ app.get('/api/events/hosted', async (req, res) => {
 
 app.get('/api/events/:id', async (req, res) => {
   try {
+    const sampleDb = {
+      s2: {
+        id: 's2',
+        title: 'Documentary Night: Rivers',
+        date: new Date(Date.now() + 3 * 86400000).toISOString(),
+        time: '18:30',
+        venue: 'Community Hall',
+        image:
+          'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=60&auto=format&fit=crop',
+        isIndiegoPick: false,
+        genre: 'Documentary',
+        description:
+          'A deep dive into the river systems of the world. Witness breathtaking footage and compelling narratives that explore the vital role these waterways play in our ecosystems. What to expect: An evening of eye-opening documentary filmmaking followed by a brief discussion.',
+        sourceLink: 'https://example.com/tickets/s2',
+      },
+      s3: {
+        id: 's3',
+        title: 'Local Shorts Block',
+        date: new Date(Date.now() + 5 * 86400000).toISOString(),
+        time: '20:00',
+        venue: 'Indiego Studio',
+        image:
+          'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?w=800&q=60&auto=format&fit=crop',
+        isIndiegoPick: true,
+        genre: 'Short Films',
+        description:
+          'Support local filmmakers in this specially curated block of short films. Featuring a variety of genres and styles, this screening highlights the best of up-and-coming talent. What to expect: Diverse storytelling and an engaging Q&A session with some of the directors.',
+        sourceLink: 'https://example.com/tickets/s3',
+      },
+      s4: {
+        id: 's4',
+        title: 'Art House Evening',
+        date: new Date(Date.now() + 7 * 86400000).toISOString(),
+        time: '19:45',
+        venue: 'Art House',
+        image:
+          'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=800&q=60&auto=format&fit=crop',
+        isIndiegoPick: false,
+        genre: 'Art House',
+        description:
+          'An evening dedicated to avant-garde and experimental cinema. Experience films that challenge traditional narratives and visual styles. What to expect: An immersive look into cinema as a raw art form.',
+        sourceLink: 'https://example.com/tickets/s4',
+      },
+      s5: {
+        id: 's5',
+        title: 'Online: Filmmaker Q&A',
+        date: new Date(Date.now() + 2 * 86400000).toISOString(),
+        time: '17:00',
+        venue: 'Online',
+        image:
+          'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=800&q=60&auto=format&fit=crop',
+        isIndiegoPick: false,
+        genre: 'Photography & Film',
+        description:
+          'Join us online for an interactive Q&A session with acclaimed filmmakers. Discuss their creative process, latest projects, and the state of the industry. What to expect: Insightful conversations and the opportunity to ask your own questions.',
+        sourceLink: 'https://example.com/tickets/s5',
+      },
+      s6: {
+        id: 's6',
+        title: 'Midnight Local Feature',
+        date: new Date(Date.now() + 10 * 86400000).toISOString(),
+        time: '23:30',
+        venue: 'Riverside Cinema',
+        image:
+          'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&q=60&auto=format&fit=crop',
+        isIndiegoPick: false,
+        genre: 'Local Feature',
+        description:
+          'A special midnight screening of a cult classic local feature. Rediscover a beloved film on the big screen with fellow fans. What to expect: A vibrant atmosphere, an unforgettable cinematic experience, and great late-night energy.',
+        sourceLink: 'https://example.com/tickets/s6',
+      },
+    }
+
+    if (sampleDb[req.params.id]) {
+      return res.json(sampleDb[req.params.id])
+    }
+
     const event = await prisma.event.findUnique({
       where: { id: req.params.id },
       include: { rsvps: { select: { id: true } } },

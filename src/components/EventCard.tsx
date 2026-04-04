@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Box from '@mui/material/Box'
 import CardActionArea from '@mui/material/CardActionArea'
+import { useNavigate } from 'react-router-dom'
 
 export interface EventData {
   id?: string
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export default function EventCard({ event, darkBg = true }: Props) {
+  const navigate = useNavigate()
   const dateObj = new Date(event.date)
   const displayDate = isNaN(dateObj.getTime())
     ? String(event.date)
@@ -41,6 +43,8 @@ export default function EventCard({ event, darkBg = true }: Props) {
   const handleClick = () => {
     if (event.sourceLink) {
       window.open(event.sourceLink, '_blank', 'noopener,noreferrer')
+    } else if (event.id) {
+      navigate(`/screenings/${event.id}`)
     }
   }
 
@@ -53,12 +57,12 @@ export default function EventCard({ event, darkBg = true }: Props) {
         bgcolor: 'transparent',
         boxShadow: 'none',
         flex: { xs: '0 0 180px', sm: '0 0 220px' },
-        cursor: event.sourceLink ? 'pointer' : 'default',
+        cursor: event.sourceLink || event.id ? 'pointer' : 'default',
       }}
     >
       <CardActionArea
         onClick={handleClick}
-        disabled={!event.sourceLink}
+        disabled={!event.sourceLink && !event.id}
         sx={{ borderRadius: 2 }}
       >
         <Box sx={{ position: 'relative' }}>

@@ -192,24 +192,44 @@ export default function ScreeningDetail() {
         >
           <Grid container spacing={6}>
             <Grid size={{ xs: 12, md: 8 }}>
-              {event.description ? (
+              <Box sx={{ mb: 4 }}>
                 <Typography
+                  variant='h3'
                   sx={{
-                    fontSize: 16,
-                    lineHeight: 1.8,
-                    color: 'text.primary',
-                    mb: 4,
-                    whiteSpace: 'pre-line',
+                    fontSize: { xs: 24, md: 28 },
+                    color: 'primary.main',
+                    mb: 3,
                   }}
                 >
-                  {event.description}
+                  What to Expect
                 </Typography>
-              ) : (
-                <Typography sx={{ fontSize: 16, color: 'text.primary', mb: 4 }}>
-                  Details for this screening will be available soon. Check back
-                  for more information about showtimes and ticketing.
+                <Typography sx={{ mb: 1.5, fontSize: 16 }}>
+                  <strong>Date:</strong> {displayDate}
+                  {event.time ? ` at ${event.time}` : ''}
                 </Typography>
-              )}
+                {event.venue && (
+                  <Typography sx={{ mb: 3, fontSize: 16 }}>
+                    <strong>Venue:</strong> {event.venue}
+                  </Typography>
+                )}
+                {event.description ? (
+                  <Typography
+                    sx={{
+                      fontSize: 16,
+                      lineHeight: 1.8,
+                      color: 'text.primary',
+                      whiteSpace: 'pre-line',
+                    }}
+                  >
+                    {event.description}
+                  </Typography>
+                ) : (
+                  <Typography sx={{ fontSize: 16, color: 'text.primary' }}>
+                    Details for this screening will be available soon. Check
+                    back for more information about showtimes and ticketing.
+                  </Typography>
+                )}
+              </Box>
 
               {gallery.length > 0 && (
                 <>

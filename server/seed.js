@@ -285,22 +285,6 @@ async function seedScreenings() {
       ]),
     },
     {
-      title: 'Mee Pok Man Remastered',
-      date: daysFromNow(17),
-      time: '9:00 PM',
-      venue: 'Shaw Theatres Lido',
-      sourceLink: 'https://singaporefilmsociety.com/mee-pok-man',
-      image:
-        'https://images.unsplash.com/photo-1518676590747-1e3dcf5a0f32?w=800&fit=crop',
-      genre: 'Local Feature',
-      description:
-        "Eric Khoo's debut feature — a noodle seller becomes obsessed with a sex worker he rescues from a hit-and-run. Dark, unflinching, and entirely original, Mee Pok Man was the film that proved Singapore cinema could be daring. Now remastered in 4K.",
-      galleryImages: JSON.stringify([
-        'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&fit=crop',
-        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&fit=crop',
-      ]),
-    },
-    {
       title: 'Filipino New Wave Showcase',
       date: daysFromNow(18),
       time: '6:00 PM',

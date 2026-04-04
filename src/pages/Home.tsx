@@ -29,8 +29,8 @@ export default function Home() {
 
   useEffect(() => {
     axios
-      .get('/api/events?limit=6')
-      .then((res) => setEvents(res.data.events))
+      .get('/api/events/hosted')
+      .then((res) => setEvents(res.data.slice(0, 6)))
       .catch(console.error)
 
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
@@ -140,6 +140,8 @@ export default function Home() {
             30 January, 2026 | 8PM @ 37 Emerald Hill
           </Typography>
           <Button
+            component={Link}
+            to='/screenings'
             variant='contained'
             size='large'
             sx={{
@@ -221,61 +223,70 @@ export default function Home() {
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-            {pollOptions.map((opt, i) => (
-              <Box
-                key={opt.id}
-                onClick={() => handleVote(opt.id)}
-                sx={{
-                  width: { xs: 140, md: 180 },
-                  height: {
-                    xs: i === 0 ? 220 : 180,
-                    md: i === 0 ? 280 : 230,
-                  },
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                  position: 'relative',
-                  background:
-                    'linear-gradient(180deg, #b53a2a 0%, #d4887b 100%)',
-                  cursor: userVoted || !isLoggedIn ? 'default' : 'pointer',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform:
-                      userVoted || !isLoggedIn ? 'none' : 'translateY(-4px)',
-                  },
-                }}
-              >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: 3,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
+              {pollOptions.map((opt, i) => (
                 <Box
+                  key={opt.id}
+                  onClick={() => handleVote(opt.id)}
                   sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    p: 2,
-                    fontSize: 13,
-                    lineHeight: 1.4,
-                    color: '#1a1411',
+                    width: { xs: 140, md: 180 },
+                    height: {
+                      xs: i === 0 ? 220 : 180,
+                      md: i === 0 ? 280 : 230,
+                    },
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    position: 'relative',
                     background:
-                      'linear-gradient(to top, rgba(213,136,123,0.9), transparent)',
+                      'linear-gradient(180deg, #b53a2a 0%, #d4887b 100%)',
+                    cursor: userVoted || !isLoggedIn ? 'default' : 'pointer',
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform:
+                        userVoted || !isLoggedIn ? 'none' : 'translateY(-4px)',
+                    },
                   }}
                 >
-                  {opt.title}
-                  <br />@ {opt.venue}
-                  {userVoted && opt.votes !== null && (
-                    <Typography
-                      sx={{
-                        mt: 1,
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        color: '#fff',
-                      }}
-                    >
-                      {opt.votes} Votes
-                    </Typography>
-                  )}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      p: 2,
+                      fontSize: 13,
+                      lineHeight: 1.4,
+                      color: '#1a1411',
+                      background:
+                        'linear-gradient(to top, rgba(213,136,123,0.9), transparent)',
+                    }}
+                  >
+                    {opt.title}
+                    <br />@ {opt.venue}
+                    {userVoted && opt.votes !== null && (
+                      <Typography
+                        sx={{
+                          mt: 1,
+                          fontSize: 16,
+                          fontWeight: 'bold',
+                          color: '#fff',
+                        }}
+                      >
+                        {opt.votes} Votes
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              ))}
+            </Box>
           </Box>
         </Container>
       </Box>
@@ -375,7 +386,7 @@ export default function Home() {
         <Box sx={{ textAlign: 'right', pt: 2 }}>
           <Button
             component={Link}
-            to='/screenings'
+            to='/events'
             sx={{
               color: 'text.secondary',
               fontSize: 14,
