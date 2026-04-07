@@ -49,9 +49,7 @@ export default function EventCard({
       })
 
   const handleClick = () => {
-    if (event.sourceLink) {
-      window.open(event.sourceLink, '_blank', 'noopener,noreferrer')
-    } else if (event.id) {
+    if (event.id) {
       navigate(`/screenings/${event.id}`)
     }
   }
@@ -67,12 +65,12 @@ export default function EventCard({
         ...(carouselMode
           ? { flex: { xs: '0 0 180px', sm: '0 0 220px' } }
           : { width: '100%' }),
-        cursor: event.sourceLink || event.id ? 'pointer' : 'default',
+        cursor: event.id ? 'pointer' : 'default',
       }}
     >
       <CardActionArea
         onClick={handleClick}
-        disabled={!event.sourceLink && !event.id}
+        disabled={!event.id}
         sx={{ borderRadius: 2 }}
       >
         <Box sx={{ position: 'relative' }}>
